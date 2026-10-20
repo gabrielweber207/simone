@@ -1,0 +1,1578 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101a28">
+  <title>Ordens de Produção | Gabriel Weber</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f5f7f5;
+      --muted: #bdc8c0;
+      --line: #303d35;
+      --paper: #111714;
+      --white: #1a231e;
+      --green: #91d3a8;
+      --green-soft: #263c30;
+      --lime: #d5f078;
+      --coral: #f08c73;
+      --blue: #82c7df;
+      --shadow: 0 16px 40px rgba(0, 0, 0, .2);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background-color: var(--paper);
+      background-image: radial-gradient(rgba(143, 165, 148, .11) 0.7px, transparent 0.7px);
+      background-size: 20px 20px;
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      min-width: 320px;
+      line-height: 1.5;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    ::selection { background: var(--lime); color: #172019; }
+    :focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+    * { scrollbar-color: #526558 #19211c; scrollbar-width: thin; }
+
+    .shell { max-width: 1480px; margin: 0 auto; padding: 0 56px 64px; }
+
+    .topbar {
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-logo {
+      width: 138px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      padding: 4px 7px;
+      border-radius: 4px;
+      background: #000;
+    }
+    .brand-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .brand-name { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 14px; }
+    .brand-caption { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .top-note { color: var(--muted); font-size: 12px; }
+
+    main { padding-top: 42px; }
+    .intro { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 31px; }
+    .eyebrow { color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; }
+    h1 {
+      margin: 10px 0 7px;
+      font-family: "Manrope", sans-serif;
+      font-size: 44px;
+      line-height: 1.1;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+    .intro p { margin: 0; color: var(--muted); font-size: 14px; }
+    .actions { display: flex; gap: 9px; flex-wrap: wrap; }
+
+    .button {
+      min-height: 42px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 0 15px;
+      font-size: 12px;
+      font-weight: 700;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button-primary { background: var(--lime); color: #172019; }
+    .button-primary:hover { background: #e2f89b; }
+    .button-secondary { background: #202b24; color: var(--ink); border-color: var(--line); }
+    .button-secondary:hover { border-color: #65786a; background: #26332b; }
+    .button:disabled { cursor: not-allowed; opacity: .45; transform: none; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric { min-height: 88px; display: flex; align-items: center; gap: 15px; padding: 15px 18px; border: 1px solid var(--line); border-radius: 6px; background: #19211c; }
+    .metric-symbol { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; font-size: 15px; font-weight: 700; }
+    .metric:nth-child(1) .metric-symbol { background: var(--green-soft); color: var(--green); }
+    .metric:nth-child(2) .metric-symbol { background: #443026; color: var(--coral); }
+    .metric:nth-child(3) .metric-symbol { background: #20343b; color: var(--blue); }
+    .metric-value { font-family: "Manrope", sans-serif; font-size: 23px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .metric-label { margin-top: 4px; color: var(--muted); font-size: 11px; }
+
+    .production-chart { margin: 0 0 23px; padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: #19211c; box-shadow: var(--shadow); }
+    .chart-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+    .chart-title { font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 800; }
+    .chart-caption, .chart-note { color: var(--muted); font-size: 11px; }
+    .charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .chart-panel { min-width: 0; padding: 13px 14px; border: 1px solid #303d35; border-radius: 5px; background: #141b17; }
+    .chart-panel + .chart-panel { border-left: 1px solid #303d35; }
+    .chart-panel-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .chart-panel-title strong { color: var(--ink); font-size: 12px; text-transform: none; }
+    .chart-list { display: grid; max-height: 410px; gap: 11px; overflow: auto; padding-right: 4px; align-content: start; }
+    .chart-row { min-width: 0; display: grid; grid-template-columns: minmax(75px, .6fr) minmax(70px, 1fr) auto; gap: 9px; align-items: center; }
+    .chart-op { overflow: hidden; color: var(--ink); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .chart-track { height: 7px; overflow: hidden; border-radius: 4px; background: #2b3730; }
+    .chart-bar { display: block; height: 100%; min-width: 0; border-radius: inherit; background: var(--lime); }
+    .chart-list-kilos .chart-bar { background: var(--blue); }
+    .chart-value { min-width: 58px; color: var(--ink); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .chart-empty { padding: 10px 0; color: var(--muted); font-size: 11px; }
+    .chart-note { min-height: 15px; margin-top: 12px; line-height: 1.5; }
+
+    .import-area {
+      min-height: 91px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin: 0 0 24px;
+      padding: 17px 20px;
+      border: 1px dashed #4b6252;
+      border-radius: 6px;
+      background: #19211c;
+      transition: background .18s ease, border-color .18s ease;
+    }
+    .import-area.is-over { background: #202c23; border-color: var(--lime); }
+    .import-copy { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .upload-symbol { width: 37px; height: 37px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: var(--green-soft); color: var(--green); font-size: 19px; }
+    .import-title { font-size: 13px; font-weight: 700; }
+    .import-hint { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .file-name { color: var(--green); font-weight: 700; }
+    .hidden-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    .mapping {
+      display: none;
+      margin: -5px 0 25px;
+      padding: 17px 19px 19px;
+      background: #19211c;
+      border-top: 2px solid var(--lime);
+      box-shadow: var(--shadow);
+    }
+    .mapping.is-visible { display: block; }
+    .mapping-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+    .mapping-heading strong { font-family: "Manrope", sans-serif; font-size: 13px; }
+    .mapping-heading span { color: var(--muted); font-size: 11px; }
+    .mapping-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .mapping-field label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .mapping-field select { width: 100%; height: 37px; padding: 0 9px; color: var(--ink); background: #111714; border: 1px solid var(--line); border-radius: 3px; font-size: 11px; }
+
+    .table-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 0 0 12px; }
+    .table-heading { font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 800; }
+    .table-caption { margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .search-wrap { position: relative; width: min(275px, 45%); }
+    .search-symbol { position: absolute; top: 50%; left: 12px; color: var(--muted); font-size: 15px; transform: translateY(-50%); }
+    .search-input { width: 100%; height: 39px; padding: 0 12px 0 35px; border: 1px solid var(--line); border-radius: 4px; outline: none; background: #19211c; color: var(--ink); font-size: 12px; }
+    .search-input:focus, .mapping-field select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(36, 90, 67, .1); }
+
+    .table-frame { overflow-x: auto; background: #19211c; border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); }
+    table { width: 100%; min-width: 1050px; border-collapse: collapse; text-align: left; }
+    thead { background: #202b24; }
+    th { height: 45px; padding: 0 13px; color: #e4eae5; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    th:first-child, td:first-child { padding-left: 19px; }
+    th.priority { color: var(--green); }
+    .sort-button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; color: inherit; font-size: inherit; font-weight: inherit; }
+    .sort-indicator { color: #96a197; font-size: 12px; }
+    td { height: 53px; padding: 8px 13px; border-top: 1px solid #29352e; color: #f1f4f1; font-size: 12px; white-space: nowrap; }
+    td.ref-cell { color: #fff; font-weight: 700; }
+    td.qty-cell { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .expired-row td { color: #ff7777 !important; }
+    .expired-row td.ref-cell { color: #ff7777; }
+    .expired-row .op-number-input { border-color: #7d4545; color: #ff7777; }
+    .due-soon-row td { color: #ffd65a !important; }
+    .due-soon-row td.ref-cell { color: #ffd65a; }
+    .due-soon-row .op-number-input { border-color: #8b7436; color: #ffd65a; }
+    .empty-cell { height: 165px; text-align: center; white-space: normal; }
+    .empty-title { color: var(--ink); font-family: "Manrope", sans-serif; font-size: 14px; font-weight: 800; }
+    .empty-copy { max-width: 390px; margin: 7px auto 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .table-footer { display: flex; justify-content: space-between; gap: 12px; padding: 11px 15px; color: var(--muted); font-size: 10px; }
+    .notice { min-height: 17px; margin-top: 12px; color: var(--muted); font-size: 11px; }
+    .notice.error { color: #ff9c83; }
+    .op-number-input { width: 108px; height: 32px; padding: 0 8px; border: 1px solid #45564a; border-radius: 4px; outline: none; background: #111714; color: #fff; font-size: 11px; font-weight: 700; }
+    .op-number-input:focus { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(213, 240, 120, .12); }
+    .op-number-input::placeholder { color: #728077; font-weight: 400; }
+
+    @media (max-width: 760px) {
+      .shell { padding: 0 20px 42px; }
+      .topbar { height: 72px; }
+      .brand-logo { width: 122px; height: 48px; }
+      main { padding-top: 30px; }
+      .intro { align-items: flex-start; flex-direction: column; gap: 17px; margin-bottom: 23px; }
+      .intro p { font-size: 13px; line-height: 1.5; }
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .metric { min-height: 79px; gap: 8px; padding-right: 8px; }
+      .metric + .metric { padding-left: 14px; }
+      .metric-symbol { width: 28px; height: 28px; font-size: 12px; }
+      .metric-value { font-size: 19px; }
+      .metric-label { max-width: 75px; font-size: 9px; line-height: 1.3; }
+      .charts-grid { grid-template-columns: 1fr; gap: 10px; }
+      .chart-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .import-area { align-items: flex-start; flex-direction: column; }
+      .mapping-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .mapping-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+    }
+
+    @media (max-width: 430px) {
+      .shell { padding-right: 14px; padding-left: 14px; }
+      h1 { font-size: 34px; }
+      .brand-logo { width: 104px; height: 42px; }
+      .brand { gap: 9px; }
+      .brand-name { font-size: 12px; }
+      .brand-caption { font-size: 10px; }
+      .top-note { display: none; }
+      .actions { width: 100%; }
+      .actions .button { flex: 1; padding: 0 10px; }
+      .metric { gap: 6px; }
+      .metric + .metric { padding-left: 7px; }
+      .metric { padding-left: 10px; padding-right: 10px; }
+      .metric-symbol { display: none; }
+      .table-toolbar { align-items: flex-start; flex-direction: column; }
+      .search-wrap { width: 100%; }
+      .mapping-grid { grid-template-columns: 1fr; }
+      .table-footer { flex-direction: column; }
+      .production-chart { padding: 13px; }
+      .chart-panel { padding: 11px; }
+    }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .metric, .chart-panel, .button, .import-area, .search-input, .mapping-field select, .op-number-input {
+      transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    .metric:hover { transform: translateY(-2px); border-color: #536b59; background: #1d2922; }
+    .chart-panel:hover { border-color: #536b59; }
+    .chart-bar { transition: width .4s ease; }
+    .button:focus-visible, .sort-button:focus-visible, .search-input:focus-visible,
+    .mapping-field select:focus-visible, .op-number-input:focus-visible {
+      outline: 2px solid var(--lime);
+      outline-offset: 3px;
+    }
+    .search-input:focus, .mapping-field select:focus { box-shadow: 0 0 0 3px rgba(145, 211, 168, .16); }
+    #table-body tr:hover td { background: #202b24; }
+    ::selection { background: var(--lime); color: #172019; }
+    * { scrollbar-color: #526558 #19211c; scrollbar-width: thin; }
+
+    @media (max-width: 760px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+
+    :root {
+      color-scheme: dark;
+      --ink: #edf3fa;
+      --muted: #a4b3c5;
+      --line: #2b3b50;
+      --paper: #101a28;
+      --white: #192638;
+      --green: #61c49a;
+      --green-soft: #203c3b;
+      --lime: #448fdf;
+      --coral: #f08472;
+      --blue: #65b9df;
+      --shadow: 0 10px 28px rgba(0, 0, 0, .22);
+    }
+
+    body {
+      background-color: var(--paper);
+      background-image: radial-gradient(rgba(151, 177, 208, .09) .7px, transparent .7px);
+      background-size: 22px 22px;
+      color: var(--ink);
+    }
+
+    * { scrollbar-color: #53667d #172334; }
+
+    .shell { max-width: 1560px; padding: 0 44px 64px; }
+    .topbar { height: 78px; border-bottom-color: var(--line); }
+    .brand-logo {
+      width: 126px;
+      height: 48px;
+      border-radius: 7px;
+      background: #0a1421;
+    }
+    .brand-name { color: #f1f5fa; font-size: 13px; letter-spacing: .04em; }
+    .brand-caption, .top-note { color: var(--muted); }
+    .top-note { font-size: 10px; font-weight: 700; letter-spacing: .11em; }
+
+    main { padding-top: 35px; }
+    .intro { margin-bottom: 25px; }
+    .eyebrow { color: #71b5f2; letter-spacing: .13em; }
+    h1 {
+      color: #f0f5fb;
+      font-size: clamp(32px, 3.2vw, 42px);
+      letter-spacing: -.035em;
+    }
+    .intro p { color: var(--muted); }
+
+    .button {
+      min-height: 41px;
+      border-radius: 7px;
+      font-size: 12px;
+    }
+    .button-primary { background: #347fce; color: #fff; }
+    .button-primary:hover { background: #438edb; }
+    .button-secondary {
+      background: #1c2b3d;
+      color: #e4edf7;
+      border-color: #34475e;
+    }
+    .button-secondary:hover { border-color: #607b9c; background: #24364b; }
+
+    .metrics { gap: 14px; margin-bottom: 18px; }
+    .metric {
+      min-height: 91px;
+      gap: 14px;
+      padding: 16px 18px;
+      border-color: var(--line);
+      border-radius: 9px;
+      background: #192638;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, .12);
+    }
+    .metric-symbol { width: 39px; height: 39px; border-radius: 10px; }
+    .metric:nth-child(1) .metric-symbol { background: #203955; color: #75b7fb; }
+    .metric:nth-child(2) .metric-symbol { background: #49372c; color: #f0a354; }
+    .metric:nth-child(3) .metric-symbol { background: #203e3b; color: #65c6a0; }
+    .metric:nth-child(4) .metric-symbol { background: #3b3152; color: #b195ee; }
+    .metric-value { color: #f0f5fb; font-size: 25px; }
+    .metric-label { color: var(--muted); font-size: 11px; }
+
+    .production-chart {
+      margin-bottom: 18px;
+      padding: 19px;
+      border-color: var(--line);
+      border-radius: 10px;
+      background: #192638;
+      box-shadow: var(--shadow);
+    }
+    .chart-title { color: #edf3fa; font-size: 16px; }
+    .chart-caption, .chart-note { color: var(--muted); }
+    .charts-grid { gap: 14px; }
+    .chart-panel {
+      padding: 14px 15px;
+      border-color: #2b3b50;
+      border-radius: 8px;
+      background: #141f2e;
+    }
+    .chart-panel + .chart-panel { border-left: 1px solid #2b3b50; }
+    .chart-panel-title { color: var(--muted); }
+    .chart-panel-title strong, .chart-op, .chart-value { color: #e6eef8; }
+    .chart-track { background: #2a394d; }
+    .chart-bar { background: #448fdf; }
+    .chart-list-kilos .chart-bar { background: #35ad9a; }
+    .chart-empty { color: var(--muted); }
+
+    .import-area {
+      min-height: 88px;
+      margin-bottom: 22px;
+      border-color: #405a76;
+      border-radius: 9px;
+      background: #17263a;
+    }
+    .import-area.is-over { background: #203751; border-color: #448fdf; }
+    .upload-symbol { border-radius: 10px; background: #203955; color: #75b7fb; }
+    .import-title { color: #e7eef7; }
+    .import-hint, .mapping-heading span { color: var(--muted); }
+    .file-name { color: var(--green); }
+
+    .mapping {
+      border: 1px solid var(--line);
+      border-top: 3px solid #448fdf;
+      border-radius: 9px;
+      background: #192638;
+    }
+    .mapping-heading strong { color: #edf3fa; }
+    .mapping-field label { color: #a4b3c5; }
+    .mapping-field select {
+      color: var(--ink);
+      background: #111c2a;
+      border-color: #34475e;
+      border-radius: 6px;
+    }
+
+    .table-toolbar { margin-bottom: 13px; }
+    .table-heading { color: #21324a; font-size: 16px; }
+    .table-caption { color: var(--muted); }
+    .search-input {
+      color: var(--ink);
+      background: #141f2e;
+      border-color: #34475e;
+      border-radius: 7px;
+    }
+    .search-symbol { color: #9aabc0; }
+    .search-input::placeholder { color: #899bb1; }
+    .table-frame {
+      border-color: var(--line);
+      border-radius: 9px;
+      background: #192638;
+      box-shadow: var(--shadow);
+    }
+    thead { background: #202f43; }
+    th { color: #c3d0df; font-size: 10px; }
+    th.priority { color: #82bdf5; }
+    .sort-indicator { color: #91a3b9; }
+    td {
+      border-top-color: #2a394d;
+      color: #dbe5f0;
+      font-size: 12px;
+    }
+    td.ref-cell { color: #f0f5fb; }
+    .expired-row td, .expired-row td.ref-cell { color: #ff8585 !important; }
+    .expired-row .op-number-input { border-color: #794848; color: #ff8585; }
+    .due-soon-row td, .due-soon-row td.ref-cell { color: #ffd36d !important; }
+    .due-soon-row .op-number-input { border-color: #796639; color: #ffd36d; }
+    .empty-title { color: #edf3fa; }
+    .empty-copy, .table-footer { color: var(--muted); }
+    .op-number-input {
+      border-color: #40536a;
+      background: #111c2a;
+      color: #edf3fa;
+    }
+    .op-number-input::placeholder { color: #899bb1; }
+    .notice { color: var(--muted); }
+    .notice.error { color: #ff9280; }
+
+    .metric:hover { border-color: #526a86; background: #1d2c40; }
+    .chart-panel:hover { border-color: #435a75; }
+    .search-input:focus, .mapping-field select:focus { box-shadow: 0 0 0 3px rgba(68, 143, 223, .18); }
+    #table-body tr:hover td { background: #202f43; }
+    .button:focus-visible, .sort-button:focus-visible, .search-input:focus-visible,
+    .mapping-field select:focus-visible, .op-number-input:focus-visible {
+      outline-color: #71b5f2;
+    }
+    .op-number-input:focus { border-color: #71b5f2; box-shadow: 0 0 0 3px rgba(68, 143, 223, .18); }
+
+    @media (max-width: 760px) {
+      .shell { padding: 0 20px 42px; }
+      .topbar { height: 72px; }
+      .brand-logo { width: 112px; height: 44px; }
+      main { padding-top: 27px; }
+      .metric { padding: 13px 12px; }
+    }
+
+    @media (max-width: 430px) {
+      .shell { padding-right: 14px; padding-left: 14px; }
+      .brand-logo { width: 100px; height: 40px; }
+      .metric-symbol { display: grid; width: 30px; height: 30px; }
+      .metric { gap: 8px; padding: 11px 9px; }
+      .metric + .metric { padding-left: 9px; }
+      .metric-value { font-size: 19px; }
+      .metric-label { max-width: none; font-size: 9px; }
+    }
+
+    body { background: #e9edf3; }
+    .app-layout { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 17px 13px 16px;
+      background: #111c2b;
+      color: #d8e2ee;
+    }
+    .sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 5px 16px; border-bottom: 1px solid #28374a; }
+    .sidebar-brand .brand-logo { width: 62px; height: 39px; flex: 0 0 auto; padding: 2px; background: transparent; }
+    .sidebar-brand-copy { min-width: 0; }
+    .sidebar-brand .brand-name { color: #f2f6fb; font-size: 11px; }
+    .sidebar-brand .brand-caption { font-size: 9px; }
+    .side-nav { display: grid; gap: 4px; margin-top: 20px; }
+    .side-link {
+      min-height: 39px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 11px;
+      border-radius: 6px;
+      color: #bfcbda;
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background .16s ease, color .16s ease;
+    }
+    .side-link:hover { background: #1b2b40; color: #fff; }
+    .side-link.is-active { background: #2779d0; color: #fff; }
+    .nav-icon { width: 17px; color: #aebed0; font-size: 15px; text-align: center; }
+    .side-link.is-active .nav-icon { color: #fff; }
+    .sidebar-footer { display: flex; align-items: center; gap: 10px; margin-top: auto; padding: 13px 5px 0; border-top: 1px solid #28374a; }
+    .user-avatar { width: 31px; height: 31px; display: grid; place-items: center; border: 2px solid #607890; border-radius: 50%; background: #31475d; color: #fff; font-size: 9px; font-weight: 800; }
+    .user-name { color: #edf3f9; font-size: 10px; font-weight: 700; }
+    .user-role { margin-top: 2px; color: #9aabbe; font-size: 9px; }
+    .workspace { min-width: 0; }
+    .topbar {
+      position: sticky;
+      z-index: 5;
+      top: 0;
+      height: 65px;
+      padding: 0 27px;
+      border-bottom: 1px solid #d9e0e9;
+      background: #f8fafc;
+    }
+    .breadcrumbs { display: flex; align-items: center; gap: 9px; color: #69798d; font-size: 11px; white-space: nowrap; }
+    .breadcrumbs strong { color: #2c3b50; font-weight: 600; }
+    .topbar-actions { display: flex; align-items: center; gap: 13px; }
+    .topbar .search-wrap { width: min(270px, 28vw); }
+    .topbar .search-input { height: 35px; background: #fff; }
+    .local-indicator { display: inline-flex; align-items: center; gap: 6px; color: #69798d; font-size: 10px; white-space: nowrap; }
+    .local-indicator span { width: 7px; height: 7px; border-radius: 50%; background: #3eae7c; box-shadow: 0 0 0 3px #e4f4ec; }
+    .topbar .button { min-height: 35px; padding: 0 12px; }
+    main { width: 100%; max-width: none; margin: 0; padding: 21px 27px 38px; }
+    .page-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 16px; }
+    .page-heading .eyebrow { color: #64758a; font-size: 10px; letter-spacing: 0; text-transform: none; }
+    .page-heading .eyebrow span { margin: 0 5px; color: #9aa7b7; }
+    h1 { margin: 5px 0 0; color: #202d40; font-size: 21px; letter-spacing: -.025em; }
+    .page-date { color: #78869a; font-size: 10px; }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .metric { min-height: 74px; gap: 11px; padding: 11px 13px; border: 1px solid #dce3ec; border-radius: 7px; background: #fff; box-shadow: 0 2px 8px rgba(31, 48, 70, .04); }
+    .metric-symbol { width: 35px; height: 35px; font-size: 14px; }
+    .metric-label { margin: 0 0 3px; color: #58697e; font-size: 10px; }
+    .metric-value { color: #202d40; font-size: 23px; }
+    .metric:hover { transform: translateY(-1px); border-color: #c4d2e1; background: #fff; }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 12px; align-items: stretch; margin-bottom: 13px; }
+    .production-chart { min-width: 0; margin: 0; padding: 14px; border: 1px solid #dce3ec; border-radius: 7px; background: #fff; box-shadow: 0 2px 9px rgba(31, 48, 70, .04); }
+    .chart-heading { align-items: center; margin-bottom: 12px; }
+    .chart-title { color: #25344a; font-size: 13px; }
+    .chart-caption { margin-top: 2px; color: #8390a0; font-size: 9px; }
+    .chart-legend { display: flex; gap: 12px; color: #68788c; font-size: 9px; }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .legend-dot { width: 7px; height: 7px; display: inline-block; border-radius: 2px; }
+    .pieces-dot { background: #347fd0; }
+    .kilos-dot { background: #2ba896; }
+    .charts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .chart-panel { padding: 10px; border-color: #e2e7ee; border-radius: 6px; background: #f9fafc; }
+    .chart-panel + .chart-panel { border-left: 1px solid #e2e7ee; }
+    .chart-panel-title { margin-bottom: 10px; font-size: 9px; }
+    .chart-panel-title strong { color: #314157; font-size: 10px; }
+    .chart-list { max-height: 238px; gap: 9px; }
+    .chart-row { grid-template-columns: minmax(58px, .7fr) minmax(35px, 1fr) auto; gap: 6px; }
+    .chart-op, .chart-value { color: #35465c; font-size: 9px; }
+    .chart-value { min-width: 44px; }
+    .chart-track { height: 6px; background: #e3e9f0; }
+    .chart-bar { background: #347fd0; }
+    .chart-list-kilos .chart-bar { background: #2ba896; }
+    .chart-empty { font-size: 10px; }
+    .chart-note { margin-top: 8px; font-size: 9px; }
+    .insights-column { display: grid; grid-template-rows: auto 1fr; gap: 10px; min-width: 0; }
+    .insight-card { min-width: 0; padding: 12px; border: 1px solid #dce3ec; border-radius: 7px; background: #fff; box-shadow: 0 2px 9px rgba(31, 48, 70, .04); }
+    .insight-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .insight-heading h2 { margin: 0; color: #2b3b51; font-size: 11px; font-weight: 800; }
+    .insight-heading > span { color: #7d8999; font-size: 9px; }
+    .status-content { display: flex; align-items: center; gap: 13px; }
+    .status-donut { width: 98px; height: 98px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #347fd0; }
+    .status-donut > div { width: 60px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; background: #2d5e91; color: #fff; }
+    .status-donut strong { font-family: "Manrope", sans-serif; font-size: 17px; line-height: 1.1; }
+    .status-donut span { color: #d5e4f4; font-size: 8px; }
+    .status-legend { display: grid; gap: 7px; min-width: 0; flex: 1; }
+    .status-legend-row { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 5px; color: #526278; font-size: 9px; }
+    .status-legend-row strong { color: #35465c; font-size: 9px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .alert-count { min-width: 18px; padding: 1px 5px; border-radius: 10px; background: #fae6e5; color: #c14e49 !important; text-align: center; }
+    .alert-list, .upcoming-list { display: grid; gap: 7px; }
+    .alert-item, .upcoming-item { display: grid; grid-template-columns: 17px minmax(0, 1fr); gap: 7px; align-items: start; }
+    .alert-icon { width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%; color: #fff; font-size: 9px; font-weight: 800; }
+    .alert-icon.is-overdue { background: #d95050; }
+    .alert-icon.is-soon { background: #e2a02e; }
+    .alert-title, .upcoming-title { overflow: hidden; color: #394a60; font-size: 9px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .alert-detail, .upcoming-detail { margin-top: 1px; color: #8190a1; font-size: 8px; }
+    .upcoming-heading { margin: 11px 0 7px; padding-top: 9px; border-top: 1px solid #edf0f4; color: #34455a; font-size: 9px; font-weight: 800; }
+    .upcoming-marker { width: 7px; height: 7px; margin: 4px 0 0 4px; border-radius: 50%; background: #347fd0; }
+    .insight-empty { color: #8491a1; font-size: 9px; line-height: 1.5; }
+    .import-area { min-height: 58px; margin: 0 0 15px; padding: 9px 13px; border-color: #c7d4e3; border-radius: 7px; background: #f4f8fc; }
+    .import-copy { gap: 9px; }
+    .upload-symbol { width: 30px; height: 30px; border-radius: 7px; font-size: 16px; }
+    .import-title { color: #34465d; font-size: 10px; }
+    .import-hint { margin-top: 1px; color: #78889c; font-size: 9px; }
+    .import-area .button { min-height: 32px; }
+    .mapping { margin: 0 0 15px; padding: 14px; }
+    .mapping-heading strong { color: #2b3b51; }
+    .mapping-field label { color: #53647a; }
+    .mapping-field select { color: #27364a; background: #fff; }
+    .orders-section { min-width: 0; }
+    .table-toolbar { margin-bottom: 9px; }
+    .table-heading { color: #25344a; font-size: 13px; }
+    .table-caption { color: #8190a1; font-size: 9px; }
+    .table-actions { display: flex; align-items: center; gap: 10px; }
+    .table-count { color: #62738a; font-size: 9px; white-space: nowrap; }
+    .table-actions .button { min-height: 31px; padding: 0 10px; font-size: 10px; }
+    .search-input { color: #27364a; background: #fff; border-color: #d7dfe9; }
+    .search-input::placeholder { color: #8996a6; }
+    .table-frame { border-color: #dce3ec; border-radius: 7px; background: #fff; box-shadow: 0 2px 9px rgba(31, 48, 70, .04); }
+    table { min-width: 1050px; }
+    thead { background: #e9eef5; }
+    th { height: 34px; padding: 0 9px; color: #4b5c72; font-size: 9px; }
+    th.priority { color: #246bb5; }
+    th:first-child, td:first-child { padding-left: 12px; }
+    td { height: 36px; padding: 6px 9px; border-top-color: #e9edf2; color: #3b4a5e; font-size: 10px; }
+    td.ref-cell { color: #24364e; }
+    .op-number-input { height: 25px; border-color: #d4dde7; background: #fff; color: #26364b; font-size: 9px; }
+    .table-footer { justify-content: flex-end; padding: 7px 11px; color: #8390a0; font-size: 9px; }
+    #table-body tr:hover td { background: #f2f6fb; }
+    .empty-title { color: #25364d; }
+    .notice { color: #68778a; font-size: 10px; }
+    .button:focus-visible, .sort-button:focus-visible, .search-input:focus-visible,
+    .mapping-field select:focus-visible, .op-number-input:focus-visible { outline-color: #2878d0; }
+
+    @media (max-width: 1100px) {
+      .app-layout { grid-template-columns: 196px minmax(0, 1fr); }
+      .sidebar { padding-right: 10px; padding-left: 10px; }
+      main { padding-right: 18px; padding-left: 18px; }
+      .topbar { padding-right: 18px; padding-left: 18px; }
+      .dashboard-grid { grid-template-columns: minmax(0, 1fr) 246px; gap: 9px; }
+      .metric { padding-right: 9px; padding-left: 9px; }
+      .metric-symbol { width: 30px; height: 30px; }
+      .status-content { gap: 8px; }
+      .status-donut { width: 82px; height: 82px; }
+      .status-donut > div { width: 52px; height: 52px; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-list { max-height: 115px; }
+    }
+    @media (max-width: 760px) {
+      .app-layout { display: block; }
+      .sidebar { position: static; height: auto; padding: 9px 15px 0; }
+      .sidebar-brand { min-height: 43px; padding: 0 2px 8px; }
+      .sidebar-brand .brand-logo { width: 53px; height: 32px; }
+      .side-nav { display: flex; gap: 4px; overflow-x: auto; margin: 7px -5px 0; padding: 0 0 8px; }
+      .side-link { min-height: 34px; flex: 0 0 auto; gap: 7px; padding: 0 9px; font-size: 10px; }
+      .sidebar-footer { display: none; }
+      .topbar { position: static; height: auto; min-height: 58px; flex-wrap: wrap; gap: 9px; padding: 10px 15px; }
+      .topbar-actions { gap: 8px; }
+      .topbar .search-wrap { width: min(250px, 36vw); }
+      .local-indicator { display: none; }
+      main { padding: 18px 15px 30px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chart-list { max-height: 150px; }
+      .insights-column { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; }
+      .status-donut { width: 82px; height: 82px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 500px) {
+      .topbar { align-items: stretch; }
+      .breadcrumbs { width: 100%; }
+      .topbar-actions { width: 100%; }
+      .topbar .search-wrap { width: auto; flex: 1; }
+      .topbar .button { flex: 0 0 auto; }
+      main { padding: 15px 11px 24px; }
+      .page-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+      h1 { font-size: 18px; }
+      .page-date { font-size: 9px; }
+      .metric { min-height: 67px; gap: 8px; }
+      .metric-value { font-size: 20px; }
+      .metric-label { font-size: 9px; }
+      .charts-grid, .insights-column { grid-template-columns: 1fr; }
+      .charts-grid { gap: 8px; }
+      .chart-list { max-height: 130px; }
+      .insights-column { gap: 8px; }
+      .table-toolbar { align-items: flex-start; }
+      .table-actions { gap: 6px; }
+      .table-count { display: none; }
+      .import-area { align-items: center; gap: 8px; padding: 8px; }
+      .import-area .button { padding: 0 8px; font-size: 9px; }
+      .import-title { font-size: 9px; }
+      .import-hint { font-size: 8px; }
+    }
+
+    body { background: #101a28; }
+    .sidebar { background: #0b1421; color: #d8e2ee; }
+    .topbar { border-bottom-color: #29384b; background: #152235; }
+    .breadcrumbs { color: #9baec4; }
+    .breadcrumbs strong { color: #e4edf7; }
+    .local-indicator { color: #a6b5c7; }
+    .page-heading .eyebrow { color: #88a0ba; }
+    .page-heading .eyebrow span { color: #63768d; }
+    h1 { color: #f0f5fb; }
+    .page-date { color: #9aabc0; }
+    .metric, .production-chart, .insight-card, .table-frame { border-color: #2b3b50; background: #192638; }
+    .metric { box-shadow: 0 3px 12px rgba(0, 0, 0, .12); }
+    .metric-label { color: #a4b3c5; }
+    .metric-value { color: #f0f5fb; }
+    .metric:hover { border-color: #526a86; background: #1d2c40; }
+    .production-chart, .insight-card, .table-frame { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+    .chart-title { color: #edf3fa; }
+    .chart-caption, .chart-legend { color: #a4b3c5; }
+    .chart-panel { border-color: #2b3b50; background: #141f2e; }
+    .chart-panel + .chart-panel { border-left-color: #2b3b50; }
+    .chart-panel-title strong, .chart-op, .chart-value { color: #e6eef8; }
+    .chart-track { background: #2a394d; }
+    .chart-empty, .chart-note { color: #a4b3c5; }
+    .chart-panel:hover { border-color: #435a75; }
+    .insight-heading h2, .upcoming-heading { color: #e6eef8; }
+    .insight-heading > span { color: #9aabc0; }
+    .status-donut > div { border-color: rgba(255,255,255,.18); background: #254e78; color: #fff; }
+    .status-donut span { color: #d5e4f4; }
+    .status-legend-row { color: #b4c1d0; }
+    .status-legend-row strong { color: #e4edf7; }
+    .alert-count { background: #512e34; color: #ff9a92 !important; }
+    .alert-title, .upcoming-title { color: #dce6f1; }
+    .alert-detail, .upcoming-detail, .insight-empty { color: #9aabc0; }
+    .upcoming-heading { border-top-color: #2b3b50; }
+    .import-area { border-color: #405a76; background: #17263a; }
+    .import-area.is-over { background: #203751; border-color: #448fdf; }
+    .import-title { color: #e7eef7; }
+    .import-hint { color: #a4b3c5; }
+    .mapping { border-color: #2b3b50; background: #192638; }
+    .mapping-heading strong { color: #edf3fa; }
+    .mapping-heading span, .mapping-field label { color: #a4b3c5; }
+    .mapping-field select { color: #edf3fa; background: #111c2a; border-color: #34475e; }
+    .table-heading { color: #edf3fa; }
+    .table-caption, .table-count { color: #9aabc0; }
+    .table-frame { background: #192638; }
+    thead { background: #202f43; }
+    th { color: #c3d0df; }
+    th.priority { color: #82bdf5; }
+    td { border-top-color: #2a394d; color: #dbe5f0; }
+    td.ref-cell { color: #f0f5fb; }
+    .expired-row td, .expired-row td.ref-cell { color: #ff8585 !important; }
+    .expired-row .op-number-input { border-color: #794848; color: #ff8585; }
+    .due-soon-row td, .due-soon-row td.ref-cell { color: #ffd36d !important; }
+    .due-soon-row .op-number-input { border-color: #796639; color: #ffd36d; }
+    .op-number-input { border-color: #40536a; background: #111c2a; color: #edf3fa; }
+    .op-number-input::placeholder { color: #899bb1; }
+    .table-footer { color: #9aabc0; }
+    #table-body tr:hover td { background: #202f43; }
+    .empty-title { color: #edf3fa; }
+    .empty-copy, .notice { color: #a4b3c5; }
+    .notice.error { color: #ff9280; }
+    .button-secondary { border-color: #34475e; background: #1c2b3d; color: #e4edf7; }
+    .button-secondary:hover { border-color: #607b9c; background: #24364b; }
+    .search-input { border-color: #34475e; background: #111c2a; color: #edf3fa; }
+    .search-input::placeholder { color: #899bb1; }
+    .search-symbol { color: #9aabc0; }
+    .search-input:focus, .mapping-field select:focus { box-shadow: 0 0 0 3px rgba(68, 143, 223, .18); }
+    .op-number-input:focus { border-color: #71b5f2; box-shadow: 0 0 0 3px rgba(68, 143, 223, .18); }
+    .button:focus-visible, .sort-button:focus-visible, .search-input:focus-visible,
+    .mapping-field select:focus-visible, .op-number-input:focus-visible { outline-color: #71b5f2; }
+
+    @media (max-width: 760px) {
+      .topbar { border-bottom-color: #29384b; background: #152235; }
+    }
+
+    body { background: #050505; }
+    .sidebar { background: #000; border-right: 1px solid #202020; }
+    .topbar { border-bottom-color: #262626; background: #0b0b0b; }
+    .metric, .production-chart, .insight-card, .table-frame, .mapping {
+      border-color: #292929;
+      background: #111;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .32);
+    }
+    .metric:hover { border-color: #444; background: #171717; }
+    .chart-panel { border-color: #292929; background: #090909; }
+    .chart-panel + .chart-panel { border-left-color: #292929; }
+    .chart-panel:hover { border-color: #414141; }
+    .chart-track { background: #292929; }
+    .import-area { border-color: #383838; background: #101010; }
+    .import-area.is-over { border-color: #448fdf; background: #151c25; }
+    .table-frame { background: #111; }
+    thead { background: #1c1c1c; }
+    td { border-top-color: #252525; }
+    #table-body tr:hover td { background: #1a1a1a; }
+    .upcoming-heading { border-top-color: #292929; }
+    .button-secondary { border-color: #383838; background: #151515; }
+    .button-secondary:hover { border-color: #555; background: #202020; }
+    .edit-mode-button.is-editing { border-color: #347fce; background: #347fce; color: #fff; }
+    .editable-cell { width: 100%; min-width: 82px; height: 25px; padding: 0 7px; border: 1px solid #383838; border-radius: 4px; background: #090909; color: #edf3fa; font-size: 10px; }
+    .editable-cell:focus { border-color: #71b5f2; outline: 2px solid rgba(68, 143, 223, .35); outline-offset: 1px; }
+    .search-input, .mapping-field select, .op-number-input {
+      border-color: #383838;
+      background: #090909;
+    }
+    .brand-logo { background: #050505; }
+    .status-donut > div { background: #111; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo" role="img" aria-label="Grupo Crisdu"><img src="crisdu.svg" alt="Grupo Crisdu"></div>
+        <div class="sidebar-brand-copy"><div class="brand-name">GABRIEL WEBER</div><div class="brand-caption">Controle de produção</div></div>
+      </div>
+      <nav class="side-nav" aria-label="Navegação principal">
+        <a class="side-link is-active" href="#dashboard"><span class="nav-icon" aria-hidden="true">▦</span>Painel</a>
+        <a class="side-link" href="#production"><span class="nav-icon" aria-hidden="true">▥</span>Produção</a>
+        <a class="side-link" href="#orders"><span class="nav-icon" aria-hidden="true">▤</span>Ordens de produção</a>
+        <a class="side-link" href="#import-area"><span class="nav-icon" aria-hidden="true">↥</span>Importar planilha</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-avatar" aria-hidden="true">GW</div>
+        <div><div class="user-name">Gabriel Weber</div><div class="user-role">Controle de produção</div></div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>Painel</span><span aria-hidden="true">›</span><strong>Controle de OP</strong></div>
+        <div class="topbar-actions">
+          <label class="search-wrap">
+            <span class="search-symbol" aria-hidden="true">⌕</span>
+            <input class="search-input" id="search-input" type="search" placeholder="Buscar em todas as colunas..." aria-label="Buscar em todas as informações da planilha">
+          </label>
+          <span class="local-indicator"><span></span> Dados locais</span>
+          <button class="button button-secondary edit-mode-button" id="edit-mode-toggle" type="button" aria-pressed="false">✎ Editar lista</button>
+          <button class="button button-primary" id="import-button" type="button"><span aria-hidden="true">＋</span> Importar</button>
+          <input class="hidden-input" id="file-input" type="file" accept=".xlsx,.xls,.csv">
+        </div>
+      </header>
+
+      <main id="dashboard">
+        <section class="page-heading" aria-labelledby="page-title">
+          <div><div class="eyebrow">Visão geral <span aria-hidden="true">/</span> OPs</div><h1 id="page-title">Controle de OP — Ordem de Produção</h1></div>
+          <div class="page-date">Acompanhamento de terceiros</div>
+        </section>
+
+        <section class="metrics" aria-label="Resumo das ordens">
+          <div class="metric"><div class="metric-symbol" aria-hidden="true">▤</div><div><div class="metric-label">OPs dentro do prazo</div><div class="metric-value" id="orders-count">0</div></div></div>
+          <div class="metric"><div class="metric-symbol" aria-hidden="true">▣</div><div><div class="metric-label">Peças nas OPs</div><div class="metric-value" id="pieces-count">0</div></div></div>
+          <div class="metric"><div class="metric-symbol" aria-hidden="true">✓</div><div><div class="metric-label">Quilos nas OPs</div><div class="metric-value" id="kilos-count">0</div></div></div>
+          <div class="metric"><div class="metric-symbol" aria-hidden="true">◇</div><div><div class="metric-label">Modelos diferentes</div><div class="metric-value" id="models-count">0</div></div></div>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="production-chart" id="production" aria-labelledby="chart-title">
+            <div class="chart-heading">
+              <div><div class="chart-title" id="chart-title">Produção por ordem</div><div class="chart-caption" id="chart-caption">Totais individuais das OPs dentro do prazo</div></div>
+              <div class="chart-legend"><span><i class="legend-dot pieces-dot"></i>Peças</span><span><i class="legend-dot kilos-dot"></i>Quilos</span></div>
+            </div>
+            <div class="charts-grid">
+              <section class="chart-panel" aria-labelledby="pieces-chart-title">
+                <div class="chart-panel-title"><strong id="pieces-chart-title">Peças por OP</strong><span>máx. 1.000 peças</span></div>
+                <div class="chart-list" id="pieces-chart" aria-live="polite"><div class="chart-empty">Importe uma planilha para ver as peças por OP.</div></div>
+              </section>
+              <section class="chart-panel" aria-labelledby="kilos-chart-title">
+                <div class="chart-panel-title"><strong id="kilos-chart-title">Quilos por OP</strong><span>máx. 300 kg</span></div>
+                <div class="chart-list chart-list-kilos" id="kilos-chart" aria-live="polite"><div class="chart-empty">Importe uma planilha para ver os quilos por OP.</div></div>
+              </section>
+            </div>
+            <div class="chart-note" id="chart-note"></div>
+          </section>
+
+          <aside class="insights-column" aria-label="Situação e prazos das OPs">
+            <section class="insight-card" aria-labelledby="status-title">
+              <div class="insight-heading"><h2 id="status-title">Status das OPs</h2><span id="status-total">0 OPs</span></div>
+              <div class="status-content">
+                <div class="status-donut" id="status-donut" role="img" aria-label="Distribuição de prazos das ordens"><div><strong id="status-center">0</strong><span>ordens</span></div></div>
+                <div class="status-legend" id="status-legend"></div>
+              </div>
+            </section>
+            <section class="insight-card alerts-card" aria-labelledby="alerts-title">
+              <div class="insight-heading"><h2 id="alerts-title">Prazos e alertas</h2><span class="alert-count" id="alert-count">0</span></div>
+              <div class="alert-list" id="alert-list"><div class="insight-empty">Importe uma planilha para acompanhar os prazos.</div></div>
+              <div class="upcoming-heading">Próximas entregas</div>
+              <div class="upcoming-list" id="upcoming-list"><div class="insight-empty">Nenhuma entrega próxima.</div></div>
+            </section>
+          </aside>
+        </div>
+
+        <section class="import-area" id="import-area" aria-label="Importar arquivo">
+          <div class="import-copy">
+            <div class="upload-symbol" aria-hidden="true">↥</div>
+            <div><div class="import-title">Solte sua planilha aqui ou escolha um arquivo</div><div class="import-hint">Excel (.xlsx, .xls) ou CSV · <span id="file-status" aria-live="polite">Nenhuma planilha carregada.</span></div></div>
+          </div>
+          <button class="button button-secondary" id="choose-file-button" type="button">Escolher arquivo</button>
+        </section>
+
+        <section class="mapping" id="mapping-panel" aria-labelledby="mapping-title">
+          <div class="mapping-heading"><strong id="mapping-title">Confira as colunas da planilha</strong><span>Se algum campo não foi reconhecido, selecione a coluna correspondente.</span></div>
+          <div class="mapping-grid" id="mapping-grid"></div>
+        </section>
+
+        <section class="orders-section" id="orders" aria-labelledby="table-title">
+          <div class="table-toolbar">
+            <div><div class="table-heading" id="table-title">Lista de ordens de produção</div><div class="table-caption">Referências do produto e do tecido aparecem primeiro.</div></div>
+            <div class="table-actions"><span class="table-count" id="visible-count">0 ordens</span><button class="button button-secondary" id="export-button" type="button" disabled><span aria-hidden="true">↓</span> Exportar CSV</button></div>
+          </div>
+          <div class="table-frame">
+            <table><thead><tr id="table-head"></tr></thead><tbody id="table-body"></tbody></table>
+            <div class="table-footer"><span>Dados processados localmente</span></div>
+          </div>
+          <div class="notice" id="notice" role="status" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const fields = [
+      { key: "productRef", label: "Referência do produto", aliases: ["referencia do produto", "ref produto", "referencia produto", "codigo produto", "cod produto", "referencia", "ref"] },
+      { key: "fabricRef", label: "Referência do tecido", aliases: ["referencia de tecido", "referencia do tecido", "ref tecido", "codigo tecido", "cod tecido", "tecido"] },
+      { key: "opNumber", label: "Número da OP", aliases: ["numero da op", "numero op", "n da op", "n op", "ordem de producao", "ordem producao", "op"] },
+      { key: "receivedDate", label: "Data de recebimento", aliases: ["data de recebimento", "data de recebimento de nota", "data recebimento nota", "data recebimento nf", "data recebimento", "recebimento da nota", "data da nota", "data entrada nota", "data entrada", "data nota"] },
+      { key: "deliveryDate", label: "Data de entrega (+30 dias)", aliases: [], derived: true },
+      { key: "enfesto", label: "Código do enfesto", aliases: ["cod enfesto", "codigo enfesto", "enfesto"] },
+      { key: "quantity", label: "Quantidade de peças", aliases: ["total", "pecas no total", "total de pecas", "total pecas", "pecas total", "quantidade de pecas", "quantidade pecas", "qtd pecas", "qtde pecas", "quantidade", "pecas", "qtd"] },
+      { key: "weight", label: "Peso (kg)", aliases: ["consumo total kg", "consumo em kg", "consumo kg", "consumo", "peso kg", "peso total kg", "peso total", "peso", "kilos", "quilo", "quilogramas", "kg"] },
+      { key: "model", label: "Modelo", aliases: ["modelo", "model"] }
+    ];
+    const sourceFields = fields.filter(field => !field.derived);
+    const storageKey = "simone-salazar-op-data-v1";
+    const numberFormat = new Intl.NumberFormat("pt-BR");
+    const kiloFormat = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 });
+    const state = { headers: [], rawRows: [], mapping: {}, records: [], fileName: "", date1904: false, sortKey: "", sortDirection: 1, editMode: false };
+
+    const elements = {
+      fileInput: document.getElementById("file-input"),
+      importButton: document.getElementById("import-button"),
+      editModeToggle: document.getElementById("edit-mode-toggle"),
+      chooseFileButton: document.getElementById("choose-file-button"),
+      exportButton: document.getElementById("export-button"),
+      dropZone: document.getElementById("import-area"),
+      fileStatus: document.getElementById("file-status"),
+      mappingPanel: document.getElementById("mapping-panel"),
+      mappingGrid: document.getElementById("mapping-grid"),
+      searchInput: document.getElementById("search-input"),
+      tableHead: document.getElementById("table-head"),
+      tableBody: document.getElementById("table-body"),
+      visibleCount: document.getElementById("visible-count"),
+      piecesChart: document.getElementById("pieces-chart"),
+      kilosChart: document.getElementById("kilos-chart"),
+      chartNote: document.getElementById("chart-note"),
+      chartCaption: document.getElementById("chart-caption"),
+      statusDonut: document.getElementById("status-donut"),
+      statusCenter: document.getElementById("status-center"),
+      statusTotal: document.getElementById("status-total"),
+      statusLegend: document.getElementById("status-legend"),
+      alertCount: document.getElementById("alert-count"),
+      alertList: document.getElementById("alert-list"),
+      upcomingList: document.getElementById("upcoming-list"),
+      notice: document.getElementById("notice")
+    };
+
+    function normalize(value) {
+      return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    }
+
+    function guessColumn(headers, aliases) {
+      const normalizedHeaders = headers.map(normalize);
+      for (const alias of aliases) {
+        const match = normalizedHeaders.findIndex(header => header === normalize(alias));
+        if (match >= 0) return match;
+      }
+      for (const alias of aliases) {
+        if (normalize(alias).length < 5) continue;
+        const match = normalizedHeaders.findIndex(header => header.includes(normalize(alias)));
+        if (match >= 0) return match;
+      }
+      return -1;
+    }
+
+    function findHeaderRow(matrix) {
+      let bestIndex = 0;
+      let bestScore = -1;
+      const searchLimit = Math.min(matrix.length, 8);
+      for (let rowIndex = 0; rowIndex < searchLimit; rowIndex += 1) {
+        const candidate = (matrix[rowIndex] || []).map(value => String(value ?? "").trim());
+        const score = sourceFields.reduce((total, field) => total + (guessColumn(candidate, field.aliases) >= 0 ? 1 : 0), 0);
+        if (score > bestScore) { bestScore = score; bestIndex = rowIndex; }
+      }
+      return bestIndex;
+    }
+
+    function formatCell(value) {
+      if (value === null || value === undefined) return "";
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const [year, month, day] = value.toISOString().slice(0, 10).split("-");
+        return `${day}/${month}/${year}`;
+      }
+      return String(value).trim();
+    }
+
+    function formatDateCell(value) {
+      if (value instanceof Date) return formatCell(value);
+      if (typeof value === "number" && Number.isFinite(value)) {
+        const date = XLSX.SSF.parse_date_code(value, { date1904: state.date1904 });
+        if (date) return `${String(date.d).padStart(2, "0")}/${String(date.m).padStart(2, "0")}/${date.y}`;
+      }
+      const date = parseDate(value);
+      return date ? `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}` : formatCell(value);
+    }
+
+    function parseQuantity(value) {
+      let cleaned = String(value ?? "").replace(/[^\d,.-]/g, "");
+      const commaIndex = cleaned.lastIndexOf(",");
+      const dotIndex = cleaned.lastIndexOf(".");
+      if (commaIndex >= 0 && dotIndex >= 0) {
+        const decimalSeparator = commaIndex > dotIndex ? "," : ".";
+        const thousandsSeparator = decimalSeparator === "," ? /\./g : /,/g;
+        cleaned = cleaned.replace(thousandsSeparator, "").replace(decimalSeparator, ".");
+      } else if (commaIndex >= 0) {
+        const decimals = cleaned.length - commaIndex - 1;
+        cleaned = decimals > 0 && decimals <= 2 ? cleaned.replace(",", ".") : cleaned.replace(/,/g, "");
+      } else if (dotIndex >= 0) {
+        const decimals = cleaned.length - dotIndex - 1;
+        if (decimals === 0 || decimals > 2) cleaned = cleaned.replace(/\./g, "");
+      }
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function parseWeight(value) {
+      if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+      let cleaned = String(value ?? "").replace(/[^\d,.-]/g, "");
+      const commaIndex = cleaned.lastIndexOf(",");
+      const dotIndex = cleaned.lastIndexOf(".");
+      if (commaIndex >= 0 && dotIndex >= 0) {
+        const decimalSeparator = commaIndex > dotIndex ? "," : ".";
+        const thousandsSeparator = decimalSeparator === "," ? /\./g : /,/g;
+        cleaned = cleaned.replace(thousandsSeparator, "").replace(decimalSeparator, ".");
+      } else if (commaIndex >= 0) {
+        cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+      }
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function parseDate(value) {
+      const text = String(value ?? "").trim();
+      const dateText = text.split(/[T ]/, 1)[0];
+      let parts = dateText.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+      if (parts) {
+        const first = Number(parts[1]);
+        const second = Number(parts[2]);
+        const month = first <= 12 && second > 12 ? first : second;
+        const day = first <= 12 && second > 12 ? second : first;
+        const year = Number(parts[3].length === 2 ? `20${parts[3]}` : parts[3]);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+      }
+      parts = dateText.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (!parts) return null;
+      const year = Number(parts[1]);
+      const month = Number(parts[2]);
+      const day = Number(parts[3]);
+      const date = new Date(year, month - 1, day);
+      return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+    }
+
+    function getDeliveryDate(value) {
+      const date = parseDate(value);
+      if (!date) return "";
+      date.setDate(date.getDate() + 30);
+      return new Intl.DateTimeFormat("pt-BR").format(date);
+    }
+
+    function getDaysUntilDelivery(record) {
+      const deliveryDate = parseDate(record.deliveryDate);
+      if (!deliveryDate) return null;
+      const today = new Date();
+      const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+      const deliveryUtc = Date.UTC(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
+      return Math.round((deliveryUtc - todayUtc) / 86400000);
+    }
+
+    function isExpired(record) {
+      const daysLeft = getDaysUntilDelivery(record);
+      return daysLeft !== null && daysLeft < 0;
+    }
+
+    function isDueSoon(record) {
+      const daysLeft = getDaysUntilDelivery(record);
+      return daysLeft !== null && daysLeft >= 0 && daysLeft <= 5;
+    }
+
+    function hasProductReference(record) {
+      return String(record.productRef ?? "").trim() !== "";
+    }
+
+    function getProductRecords() {
+      const recordsByOp = new Map();
+      const recordsWithoutOp = [];
+      for (const record of state.records) {
+        if (!hasProductReference(record)) continue;
+        const opNumber = String(record.opNumber ?? "").trim().toLocaleUpperCase("pt-BR");
+        if (!opNumber) {
+          recordsWithoutOp.push(record);
+          continue;
+        }
+        const current = recordsByOp.get(opNumber);
+        if (!current || parseWeight(record.weight) > parseWeight(current.weight)) recordsByOp.set(opNumber, record);
+      }
+      return [...recordsByOp.values(), ...recordsWithoutOp];
+    }
+
+    function getActiveRecords() {
+      return getProductRecords().filter(record => !isExpired(record));
+    }
+
+    function setNotice(message, isError = false) {
+      elements.notice.textContent = message;
+      elements.notice.classList.toggle("error", isError);
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          headers: state.headers,
+          rawRows: state.rawRows,
+          mapping: state.mapping,
+          records: state.records,
+          fileName: state.fileName,
+          date1904: state.date1904
+        }));
+      } catch {
+        setNotice("Os dados estão disponíveis nesta sessão, mas não foi possível salvá-los no navegador.", true);
+      }
+    }
+
+    function restoreState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (!saved || !Array.isArray(saved.records)) return;
+        Object.assign(state, saved);
+        state.mapping.weight ??= -1;
+        state.mapping.opNumber ??= -1;
+        state.date1904 ??= false;
+        if (Array.isArray(state.rawRows) && state.rawRows.length) buildRecords();
+        elements.fileStatus.innerHTML = state.fileName ? `Planilha carregada: <span class="file-name">${escapeHtml(state.fileName)}</span>` : "Dados salvos neste navegador.";
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+    }
+
+    function buildRecords() {
+      const previousRecords = state.records;
+      state.records = state.rawRows.map((row, rowIndex) => {
+        const record = { sourceValues: row.map(formatCell), sourceRowIndex: rowIndex };
+        for (const field of fields) {
+          if (field.derived) {
+            record[field.key] = getDeliveryDate(record.receivedDate);
+            continue;
+          }
+          const columnIndex = Number(state.mapping[field.key]);
+          const value = columnIndex >= 0 ? row[columnIndex] : "";
+          record[field.key] = columnIndex >= 0
+            ? field.key === "receivedDate" ? formatDateCell(value) : formatCell(value)
+            : field.key === "opNumber" ? previousRecords[rowIndex]?.opNumber || "" : "";
+        }
+        return record;
+      }).filter(record => fields.some(field => record[field.key]) || record.sourceValues.some(value => value !== ""));
+    }
+
+    function applyMapping() {
+      buildRecords();
+      saveState();
+      render();
+    }
+
+    function renderMapping() {
+      if (!state.headers.length) {
+        elements.mappingPanel.classList.remove("is-visible");
+        return;
+      }
+      elements.mappingGrid.innerHTML = sourceFields.map(field => {
+        const options = [`<option value="-1">Não identificado</option>`, ...state.headers.map((header, index) => `<option value="${index}" ${Number(state.mapping[field.key]) === index ? "selected" : ""}>${escapeHtml(header || `Coluna ${index + 1}`)}</option>`)];
+        return `<div class="mapping-field"><label for="map-${field.key}">${field.label}</label><select id="map-${field.key}" data-field="${field.key}">${options.join("")}</select></div>`;
+      }).join("");
+      elements.mappingPanel.classList.add("is-visible");
+      elements.mappingGrid.querySelectorAll("select").forEach(select => {
+        select.addEventListener("change", event => {
+          state.mapping[event.target.dataset.field] = Number(event.target.value);
+          applyMapping();
+        });
+      });
+    }
+
+    function getExtraColumns() {
+      const mappedColumns = new Set(sourceFields
+        .map(field => Number(state.mapping[field.key]))
+        .filter(index => index >= 0));
+      return state.headers
+        .map((header, index) => ({ header, index }))
+        .filter(column => !mappedColumns.has(column.index));
+    }
+
+    function getVisibleRecords() {
+      const query = normalize(elements.searchInput.value);
+      const searchTerms = query.split(/\s+/).filter(Boolean);
+      const records = searchTerms.length ? state.records : getProductRecords();
+      const filtered = records.filter(record => {
+        if (!searchTerms.length) return true;
+        const searchableText = normalize([
+          ...fields.map(field => record[field.key]),
+          ...(Array.isArray(record.sourceValues) ? record.sourceValues : [])
+        ].join(" "));
+        return searchTerms.every(term => searchableText.includes(term));
+      });
+      if (state.sortKey) {
+        filtered.sort((left, right) => {
+          const leftValue = left[state.sortKey] || "";
+          const rightValue = right[state.sortKey] || "";
+          const comparison = ["receivedDate", "deliveryDate"].includes(state.sortKey)
+            ? (parseDate(leftValue)?.getTime() || 0) - (parseDate(rightValue)?.getTime() || 0)
+            : ["quantity", "weight"].includes(state.sortKey)
+              ? (state.sortKey === "weight" ? parseWeight(leftValue) : parseQuantity(leftValue)) - (state.sortKey === "weight" ? parseWeight(rightValue) : parseQuantity(rightValue))
+            : String(leftValue).localeCompare(String(rightValue), "pt-BR", { numeric: true, sensitivity: "base" });
+          return comparison * state.sortDirection;
+        });
+      }
+      return filtered;
+    }
+
+    function renderTable() {
+      const extraColumns = getExtraColumns();
+      const columnCount = fields.length + extraColumns.length;
+      elements.tableHead.innerHTML = fields.map((field, index) => {
+        const active = state.sortKey === field.key;
+        const indicator = active ? (state.sortDirection === 1 ? "↑" : "↓") : "↕";
+        return `<th class="${index < 2 ? "priority" : ""}"><button class="sort-button" type="button" data-sort="${field.key}" aria-label="Ordenar por ${field.label}">${field.label}<span class="sort-indicator">${indicator}</span></button></th>`;
+      }).join("") + extraColumns.map(column => `<th class="extra-column">${escapeHtml(column.header)}</th>`).join("");
+      elements.tableHead.querySelectorAll("[data-sort]").forEach(button => button.addEventListener("click", () => {
+        const key = button.dataset.sort;
+        state.sortDirection = state.sortKey === key ? state.sortDirection * -1 : 1;
+        state.sortKey = key;
+        renderTable();
+      }));
+
+      const visibleRecords = getVisibleRecords();
+      const recordsWithReference = getProductRecords();
+      const searchActive = normalize(elements.searchInput.value) !== "";
+      const totalRecords = searchActive ? state.records.length : recordsWithReference.length;
+      elements.visibleCount.textContent = searchActive
+        ? `${numberFormat.format(visibleRecords.length)} resultado(s) de ${numberFormat.format(totalRecords)} linhas`
+        : `${numberFormat.format(visibleRecords.length)} ${visibleRecords.length === 1 ? "ordem" : "ordens"}${visibleRecords.length !== totalRecords ? ` de ${numberFormat.format(totalRecords)}` : ""}`;
+      elements.exportButton.disabled = visibleRecords.length === 0;
+
+      if (!state.records.length) {
+        elements.tableBody.innerHTML = `<tr><td class="empty-cell" colspan="${columnCount}"><div class="empty-title">Sua lista de OPs começa aqui</div><div class="empty-copy">Importe um arquivo Excel ou CSV para visualizar referências, recebimento da nota, enfesto, peças e modelo.</div></td></tr>`;
+        return;
+      }
+      if (!recordsWithReference.length && !searchActive) {
+        elements.tableBody.innerHTML = `<tr><td class="empty-cell" colspan="${columnCount}"><div class="empty-title">Nenhuma OP com referência de produto</div><div class="empty-copy">As linhas sem referência não aparecem e não entram nos totais nem nos gráficos.</div></td></tr>`;
+        return;
+      }
+      if (!visibleRecords.length) {
+        elements.tableBody.innerHTML = `<tr><td class="empty-cell" colspan="${columnCount}"><div class="empty-title">Nenhuma informação encontrada</div><div class="empty-copy">Tente buscar por outro valor. A pesquisa considera todas as colunas importadas, sem diferenciar maiúsculas ou acentos.</div></td></tr>`;
+        return;
+      }
+      elements.tableBody.innerHTML = visibleRecords.map(record => {
+        const recordIndex = state.records.indexOf(record);
+        const cells = fields.map((field, index) => {
+          const value = record[field.key] || "";
+          const className = index < 2 ? "ref-cell" : field.key === "quantity" || field.key === "weight" ? "qty-cell" : "";
+          if (state.editMode && !field.derived) {
+            const placeholder = field.key === "opNumber" ? "Nº da OP" : "";
+            return `<td class="${className}"><input class="editable-cell" type="text" value="${escapeHtml(value)}" placeholder="${placeholder}" aria-label="${field.label} para ${escapeHtml(record.productRef || `ordem ${recordIndex + 1}`)}" data-record-index="${recordIndex}" data-field-key="${field.key}"></td>`;
+          }
+          return `<td class="${className}" ${field.derived ? `data-field-display="${field.key}"` : ""}>${escapeHtml(value || "—")}</td>`;
+        });
+        const extraCells = extraColumns.map(column => {
+          const value = record.sourceValues?.[column.index] || "";
+          return state.editMode
+            ? `<td><input class="editable-cell" type="text" value="${escapeHtml(value)}" aria-label="${escapeHtml(column.header)} para ${escapeHtml(record.productRef || `ordem ${recordIndex + 1}`)}" data-record-index="${recordIndex}" data-source-column="${column.index}"></td>`
+            : `<td>${escapeHtml(value || "—")}</td>`;
+        });
+        const rowClass = isExpired(record) ? "expired-row" : isDueSoon(record) ? "due-soon-row" : "";
+        return `<tr class="${rowClass}" data-record-index="${recordIndex}">${cells.join("")}${extraCells.join("")}</tr>`;
+      }).join("");
+    }
+
+    function updateEditedCell(input) {
+      const recordIndex = Number(input.dataset.recordIndex);
+      const record = state.records[recordIndex];
+      if (!record) return;
+      const sourceRowIndex = Number(record.sourceRowIndex ?? recordIndex);
+      const sourceColumn = input.dataset.sourceColumn;
+      if (sourceColumn !== undefined) {
+        const columnIndex = Number(sourceColumn);
+        const value = input.value.trim();
+        if (record.sourceValues) record.sourceValues[columnIndex] = value;
+        if (state.rawRows[sourceRowIndex]) state.rawRows[sourceRowIndex][columnIndex] = value;
+        return;
+      }
+
+      const field = fields.find(item => item.key === input.dataset.fieldKey);
+      if (!field || field.derived) return;
+      const value = input.value.trim();
+      record[field.key] = field.key === "receivedDate" ? formatDateCell(value) : value;
+      const columnIndex = Number(state.mapping[field.key]);
+      if (columnIndex >= 0) {
+        if (record.sourceValues) record.sourceValues[columnIndex] = value;
+        if (state.rawRows[sourceRowIndex]) state.rawRows[sourceRowIndex][columnIndex] = value;
+      }
+      if (field.key === "receivedDate") {
+        record.deliveryDate = getDeliveryDate(record.receivedDate);
+        const deliveryCell = elements.tableBody.querySelector(`tr[data-record-index="${recordIndex}"] [data-field-display="deliveryDate"]`);
+        if (deliveryCell) deliveryCell.textContent = record.deliveryDate || "—";
+      }
+    }
+
+    function renderChart() {
+      const searchQuery = normalize(elements.searchInput.value);
+      elements.chartCaption.textContent = searchQuery
+        ? "Gráficos filtrados pelas ordens encontradas na pesquisa"
+        : "Totais individuais das OPs dentro do prazo";
+      if (!state.records.length) {
+        elements.piecesChart.innerHTML = `<div class="chart-empty">Importe uma planilha para ver as peças por OP.</div>`;
+        elements.kilosChart.innerHTML = `<div class="chart-empty">Importe uma planilha para ver os quilos por OP.</div>`;
+        elements.chartNote.textContent = "";
+        return;
+      }
+      if (!state.records.some(hasProductReference)) {
+        elements.piecesChart.innerHTML = `<div class="chart-empty">Sem referência de produto para contar peças.</div>`;
+        elements.kilosChart.innerHTML = `<div class="chart-empty">Sem referência de produto para contar quilos.</div>`;
+        elements.chartNote.textContent = "As linhas sem referência de produto não entram nos totais.";
+        return;
+      }
+      const exactOpQuery = searchQuery.replace(/^op\s+/, "").trim();
+      const exactOpMatches = exactOpQuery
+        ? state.records.filter(record => normalize(record.opNumber) === exactOpQuery)
+        : [];
+      const matchedRecords = searchQuery
+        ? exactOpMatches.length ? exactOpMatches : getVisibleRecords()
+        : [];
+      const matchedOpNumbers = new Set(matchedRecords
+        .map(record => normalize(record.opNumber))
+        .filter(Boolean));
+      const matchedSourceRows = new Set(matchedRecords.map(record => record.sourceRowIndex));
+      const activeRecords = (searchQuery ? getProductRecords() : getActiveRecords()).filter(record => !searchQuery
+        || matchedOpNumbers.has(normalize(record.opNumber))
+        || (!record.opNumber.trim() && matchedSourceRows.has(record.sourceRowIndex)));
+      if (!activeRecords.length) {
+        elements.piecesChart.innerHTML = `<div class="chart-empty">Não há OPs dentro do prazo para contar peças.</div>`;
+        elements.kilosChart.innerHTML = `<div class="chart-empty">Não há OPs dentro do prazo para contar quilos.</div>`;
+        elements.chartNote.textContent = searchQuery
+          ? "Nenhuma OP correspondente à pesquisa pode ser exibida nos gráficos."
+          : "As OPs vencidas continuam na tabela, destacadas em vermelho.";
+        return;
+      }
+      const hasWeight = Number(state.mapping.weight) >= 0;
+      const groups = new Map();
+      for (const [recordIndex, record] of activeRecords.entries()) {
+        const opNumber = record.opNumber.trim();
+        const name = opNumber || `Sem nº OP · ${record.productRef.trim()}`;
+        const key = opNumber ? `op:${opNumber.toLocaleUpperCase("pt-BR")}` : `sem-op:${recordIndex}`;
+        if (!groups.has(key)) groups.set(key, { name, pieces: 0, kilos: 0 });
+        const group = groups.get(key);
+        group.pieces += parseQuantity(record.quantity);
+        if (hasWeight) group.kilos += parseWeight(record.weight);
+      }
+      const allGroups = [...groups.values()].sort((left, right) => left.name.localeCompare(right.name, "pt-BR", { numeric: true, sensitivity: "base" }));
+      const maxPieces = 1000;
+      const maxKilos = 300;
+      const quantityFormat = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+      const renderBars = (container, valueKey, maximum, formatter, suffix = "") => {
+        container.innerHTML = allGroups.map(group => {
+          const value = group[valueKey];
+          const width = value > 0 ? Math.min(100, Math.max(2, value / maximum * 100)) : 0;
+          const display = valueKey === "kilos" && !hasWeight ? "—" : `${formatter.format(value)}${suffix}`;
+          return `<div class="chart-row"><div class="chart-op" title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</div><div class="chart-track"><span class="chart-bar" style="width:${width}%"></span></div><div class="chart-value">${display}</div></div>`;
+        }).join("");
+      };
+      renderBars(elements.piecesChart, "pieces", maxPieces, quantityFormat);
+      renderBars(elements.kilosChart, "kilos", maxKilos, kiloFormat, " kg");
+      const missingNumbers = activeRecords.filter(record => !record.opNumber.trim()).length;
+      const notes = [];
+      if (!hasWeight) notes.push("Selecione a coluna de peso (kg) no mapeamento para preencher o gráfico de quilos.");
+      if (hasWeight && !state.records.some(record => parseWeight(record.weight) > 0)) notes.push("A coluna de peso foi selecionada, mas não contém valores reconhecidos em kg.");
+      if (missingNumbers) notes.push(`${missingNumbers} ordem(ns) sem número de OP. Preencha Nº da OP na tabela para separar os totais.`);
+      if (allGroups.some(group => group.pieces > maxPieces || group.kilos > maxKilos)) notes.push("Barras limitadas à escala máxima; os números ao lado mostram os valores completos.");
+      elements.chartNote.textContent = notes.join(" ");
+    }
+
+    function renderStatusPanel() {
+      const records = getProductRecords();
+      const status = [
+        { label: "Dentro do prazo", color: "#347fd0", count: 0 },
+        { label: "Vence em até 5 dias", color: "#e2a02e", count: 0 },
+        { label: "Atrasadas", color: "#d95050", count: 0 },
+        { label: "Sem prazo", color: "#8292a6", count: 0 }
+      ];
+      const getStatus = record => {
+        const days = getDaysUntilDelivery(record);
+        return days === null ? 3 : days < 0 ? 2 : days <= 5 ? 1 : 0;
+      };
+      records.forEach(record => { status[getStatus(record)].count += 1; });
+      const total = records.length;
+      elements.statusCenter.textContent = numberFormat.format(total);
+      elements.statusTotal.textContent = `${numberFormat.format(total)} ${total === 1 ? "OP" : "OPs"}`;
+      elements.statusLegend.innerHTML = status.map(item => `<div class="status-legend-row"><span class="status-dot" style="background:${item.color}"></span><span>${item.label}</span><strong>${numberFormat.format(item.count)}</strong></div>`).join("");
+      let progress = 0;
+      const segments = status.filter(item => item.count > 0).map(item => {
+        const start = progress;
+        progress += item.count / Math.max(total, 1) * 100;
+        return `${item.color} ${start}% ${progress}%`;
+      });
+      elements.statusDonut.style.background = total ? `conic-gradient(${segments.join(", ")})` : "#29394e";
+      elements.statusDonut.setAttribute("aria-label", `${numberFormat.format(status[0].count)} dentro do prazo, ${numberFormat.format(status[1].count)} vencem em até cinco dias, ${numberFormat.format(status[2].count)} atrasadas e ${numberFormat.format(status[3].count)} sem prazo`);
+
+      const alerts = records
+        .filter(record => {
+          const days = getDaysUntilDelivery(record);
+          return days !== null && days <= 5;
+        })
+        .sort((left, right) => getDaysUntilDelivery(left) - getDaysUntilDelivery(right));
+      elements.alertCount.textContent = numberFormat.format(alerts.length);
+      elements.alertList.innerHTML = alerts.length
+        ? alerts.slice(0, 3).map(record => {
+          const days = getDaysUntilDelivery(record);
+          const title = record.opNumber.trim() || record.productRef.trim();
+          const detail = days < 0 ? `Prazo excedido há ${numberFormat.format(Math.abs(days))} ${Math.abs(days) === 1 ? "dia" : "dias"}` : days === 0 ? "Entrega prevista para hoje" : `Entrega em ${numberFormat.format(days)} ${days === 1 ? "dia" : "dias"}`;
+          return `<div class="alert-item"><span class="alert-icon ${days < 0 ? "is-overdue" : "is-soon"}">!</span><div><div class="alert-title">${escapeHtml(title)}</div><div class="alert-detail">${detail} · ${escapeHtml(record.deliveryDate)}</div></div></div>`;
+        }).join("")
+        : `<div class="insight-empty">${total ? "Nenhuma OP vencida ou próxima do prazo." : "Importe uma planilha para acompanhar os prazos."}</div>`;
+
+      const upcoming = records
+        .filter(record => {
+          const days = getDaysUntilDelivery(record);
+          return days !== null && days >= 0;
+        })
+        .sort((left, right) => getDaysUntilDelivery(left) - getDaysUntilDelivery(right));
+      elements.upcomingList.innerHTML = upcoming.length
+        ? upcoming.slice(0, 3).map(record => {
+          const title = record.opNumber.trim() || record.productRef.trim();
+          return `<div class="upcoming-item"><span class="upcoming-marker"></span><div><div class="upcoming-title">${escapeHtml(title)}</div><div class="upcoming-detail">Entrega prevista · ${escapeHtml(record.deliveryDate)}</div></div></div>`;
+        }).join("")
+        : `<div class="insight-empty">${total ? "Não há entregas futuras com data informada." : "Nenhuma entrega próxima."}</div>`;
+    }
+
+    function renderSummary() {
+      const activeRecords = getActiveRecords();
+      const pieces = activeRecords.reduce((total, record) => total + parseQuantity(record.quantity), 0);
+      const kilos = activeRecords.reduce((total, record) => total + parseWeight(record.weight), 0);
+      const models = new Set(activeRecords.map(record => normalize(record.model)).filter(Boolean));
+      document.getElementById("orders-count").textContent = numberFormat.format(activeRecords.length);
+      document.getElementById("pieces-count").textContent = numberFormat.format(pieces);
+      document.getElementById("kilos-count").textContent = kiloFormat.format(kilos);
+      document.getElementById("models-count").textContent = numberFormat.format(models.size);
+      renderChart();
+      renderStatusPanel();
+    }
+
+    function render() {
+      renderSummary();
+      renderMapping();
+      renderTable();
+    }
+
+    async function importFile(file) {
+      if (!file) return;
+      setNotice("");
+      if (!window.XLSX) {
+        setNotice("Não foi possível carregar o leitor de planilhas. Verifique sua conexão com a internet e tente novamente.", true);
+        return;
+      }
+      try {
+        const fileBuffer = await file.arrayBuffer();
+        let workbook;
+        if (/\.csv$/i.test(file.name)) {
+          let csvText;
+          try {
+            csvText = new TextDecoder("utf-8", { fatal: true }).decode(fileBuffer);
+          } catch {
+            csvText = new TextDecoder("windows-1252").decode(fileBuffer);
+          }
+          workbook = XLSX.read(csvText.replace(/^\uFEFF/, ""), { type: "string", cellDates: true, raw: true });
+        } else {
+          workbook = XLSX.read(fileBuffer, { type: "array", cellDates: true });
+        }
+        state.date1904 = Boolean(workbook.Workbook?.WBProps?.date1904);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        if (!sheet) throw new Error("A planilha não possui uma aba com dados.");
+        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true, blankrows: false });
+        if (!matrix.length) throw new Error("O arquivo está vazio.");
+        const headerIndex = findHeaderRow(matrix);
+        state.headers = (matrix[headerIndex] || []).map((value, index) => formatCell(value) || `Coluna ${index + 1}`);
+        state.rawRows = matrix.slice(headerIndex + 1).filter(row => row.some(value => formatCell(value)));
+        state.mapping = Object.fromEntries(sourceFields.map(field => [field.key, guessColumn(state.headers, field.aliases)]));
+        state.records = [];
+        state.fileName = file.name;
+        elements.fileStatus.innerHTML = `Planilha carregada: <span class="file-name">${escapeHtml(file.name)}</span>`;
+        applyMapping();
+        setNotice(`${numberFormat.format(state.records.length)} ${state.records.length === 1 ? "ordem importada" : "ordens importadas"}. Confira o mapeamento das colunas, se necessário.`);
+      } catch (error) {
+        setNotice(error.message || "Não foi possível ler esse arquivo.", true);
+      } finally {
+        elements.fileInput.value = "";
+      }
+    }
+
+    function exportCsv() {
+      const visibleRecords = getVisibleRecords();
+      const extraColumns = getExtraColumns();
+      const csvCell = value => {
+        let text = String(value ?? "");
+        if (/^[=+@\-]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      const headers = [...fields.map(field => field.label), ...extraColumns.map(column => column.header)];
+      const rows = [headers.map(csvCell).join(";"), ...visibleRecords.map(record => [
+        ...fields.map(field => record[field.key]),
+        ...extraColumns.map(column => record.sourceValues?.[column.index] || "")
+      ].map(csvCell).join(";"))];
+      const blob = new Blob(["\uFEFF", rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "ordens-de-producao.csv";
+      link.click();
+      URL.revokeObjectURL(link.href);
+      setNotice(`${numberFormat.format(visibleRecords.length)} ${visibleRecords.length === 1 ? "ordem exportada" : "ordens exportadas"}.`);
+    }
+
+    elements.importButton.addEventListener("click", () => elements.fileInput.click());
+    elements.editModeToggle.addEventListener("click", () => {
+      state.editMode = !state.editMode;
+      elements.editModeToggle.classList.toggle("is-editing", state.editMode);
+      elements.editModeToggle.setAttribute("aria-pressed", String(state.editMode));
+      elements.editModeToggle.innerHTML = state.editMode
+        ? '<span aria-hidden="true">✓</span> Concluir edição'
+        : '<span aria-hidden="true">✎</span> Editar lista';
+      if (!state.editMode) {
+        saveState();
+        setNotice("Alterações salvas neste navegador.");
+      } else {
+        setNotice("Modo de edição ativado. Os campos alterados são salvos ao concluir.");
+      }
+      renderTable();
+    });
+    elements.chooseFileButton.addEventListener("click", () => elements.fileInput.click());
+    elements.fileInput.addEventListener("change", event => importFile(event.target.files[0]));
+    elements.exportButton.addEventListener("click", exportCsv);
+    elements.tableBody.addEventListener("input", event => {
+      const input = event.target.closest(".editable-cell");
+      if (!input || !state.editMode) return;
+      updateEditedCell(input);
+    });
+    elements.tableBody.addEventListener("change", event => {
+      const input = event.target.closest(".editable-cell");
+      if (!input || !state.editMode) return;
+      updateEditedCell(input);
+      saveState();
+      renderSummary();
+    });
+    elements.searchInput.addEventListener("input", () => {
+      renderTable();
+      renderChart();
+    });
+    elements.dropZone.addEventListener("dragover", event => { event.preventDefault(); elements.dropZone.classList.add("is-over"); });
+    elements.dropZone.addEventListener("dragleave", event => { if (!elements.dropZone.contains(event.relatedTarget)) elements.dropZone.classList.remove("is-over"); });
+    elements.dropZone.addEventListener("drop", event => {
+      event.preventDefault();
+      elements.dropZone.classList.remove("is-over");
+      importFile(event.dataTransfer.files[0]);
+    });
+
+    restoreState();
+    render();
+  </script>
+</body>
+</html>
